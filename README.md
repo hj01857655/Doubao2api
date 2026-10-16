@@ -1,5 +1,7 @@
 # Doubao2api
 
+[![python](https://img.shields.io/badge/python-3.10%2B-3776AB?logo=python&logoColor=white)](#快速开始) [![protocols](https://img.shields.io/badge/protocols-OpenAI%20Chat%20%7C%20Anthropic%20Messages%20%7C%20Responses-4B8BBE)](#api-接口) [![runtime](https://img.shields.io/badge/runtime-Flask%20单依赖-000000?logo=flask&logoColor=white)](#快速开始) [![stars](https://img.shields.io/github/stars/hj01857655/Doubao2api?color=yellow)](https://github.com/hj01857655/Doubao2api/stargazers) [![last commit](https://img.shields.io/github/last-commit/hj01857655/Doubao2api)](https://github.com/hj01857655/Doubao2api/commits/main)
+
 > 豆包（Doubao）Web / 桌面端 → OpenAI / Anthropic 兼容 API 网关
 
 把已登录的豆包会话转成本地服务，同时对外提供三种标准协议：OpenAI Chat Completions、Anthropic Messages、OpenAI Responses。**零签名代码**（`a_bogus`/`msToken` 实测不校验），运行期仅依赖 Flask。
