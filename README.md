@@ -51,6 +51,15 @@ sessionid  sessionid_ss  sid_tt  sid_guard  uid_tt  uid_tt_ss
 d_ticket  ttwid  s_v_web_id  passport_csrf_token
 ```
 
+顺手设一个入站 key（可选但建议）：同一个 `.env` 里加一行
+
+```bash
+API_KEY=sk-doubao2api-<自选一串>
+```
+
+设了之后所有 `/v1/*` 都要求 `Authorization: Bearer <key>` 或 `x-api-key: <key>`（后者适配 Anthropic SDK）；
+**`/health` 不校验**，用于探活。不设则入站无鉴权（默认只绑 127.0.0.1）。
+
 ### 3. 启动
 
 ```bash
