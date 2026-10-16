@@ -208,21 +208,27 @@ tests/test_bridges.py      PASS 26   FAIL 0    两个协议桥 + 流式错误路
                            86 项断言，全部零网络
 ```
 
-服务已在重启后加载当前代码：`/health` 200、`/v1/models` 200（6 档）。
+服务已在重启后加载当前代码：`/health` 200、`/v1/models` 200（6 档，路由 `app/routes/openai_models.py`）。
 
-> 2026-10-17 修正：`/v1/models` 在 `server.py` → `app/routes/` 目录重构时丢失（实测 404），
-> 已补为 `app/routes/openai_models.py`（提交 `0704838`）；上面这行断言在补回后才成立。
+### 8.1 真实上游补验
 
-### 8.1 真实上游补验（1 次请求）
+每次上游调用之间按 05 的纪律隔 60 秒；入站鉴权启用后调用均带 `Authorization: Bearer <key>`。
 
-`/v1/messages` 走真上游通过：`role=assistant`、`stop_reason=end_turn`、
-`content=[{type:text,text:"我很好"}]`（服从"只回复三个字"）、
-`usage.input_tokens=5/output_tokens=1`、`doubao{conversation_id,question_id,answer_message_id}`
-与响应头 `X-Doubao-Conversation-Id` 一致。
+| 协议 | 形态 | 观测 |
+|---|---|---|
+| `/v1/chat/completions` | 非流式（带 `tools` 声明） | 200；`message` 键 `content, role`，无 `tool_calls` |
+| `/v1/chat/completions` | 流式 | 200；6 个 `data:` 帧，首帧 `delta.role=assistant`，正文 `你好`，末帧 `[DONE]` |
+| `/v1/messages` | 非流式 | 200；`role=assistant`、`stop_reason=end_turn`、`content=[{type:text,text:"我很好"}]`、`usage.input_tokens=5/output_tokens=1`、`doubao{conversation_id,question_id,answer_message_id}` 与响应头 `X-Doubao-Conversation-Id` 一致 |
+| `/v1/messages` | 流式 | 200；`message_start → content_block_start → content_block_delta ×2 → content_block_stop → message_delta → message_stop` |
+| `/v1/responses` | 非流式 | 200；`object=response`、`output[0].content[0].type=output_text`、usage 含 `reasoning_tokens` |
+| `/v1/responses` | 流式 | 200；`response.created`（`sequence_number=0`）→ `response.completed`（`sequence_number=7`），终帧携带聚合全文与 usage |
+
+入站鉴权（用 `/v1/models` 探，不耗上游）：不带 key / 错 key → `401`
+（`{"error":{"code":"invalid_api_key","type":"auth_error"}}`）；
+`Authorization: Bearer <key>` 与 `x-api-key: <key>` → `200`；`/health` → `200`（不进 `guard()`）。
 
 **仍未经真实上游验证的**：非默认模型档，以及全部错误分支
 （**故意不打**——再触发一次 `710022004` 只会加重账号风控状态）。
-`/v1/responses` 与 chat / responses 两种流式形态已于 2026-10-17 补验，见 §8.4。
 
 ### 8.2 用 Reqable 原始字节复核解析器（零新增请求）
 
@@ -244,13 +250,12 @@ tests/test_bridges.py      PASS 26   FAIL 0    两个协议桥 + 流式错误路
 
 ### 8.3 完整抓包清单的落盘位置
 
-- `tools/reqable_inventory.md` —— 332 会话去重后的**完整**清单：
+- 仓库根 `tools/reqable_inventory.md` —— 332 会话去重后的**完整**清单：
   132 端点（含每个端点的 query 参数名与是否带 `a_bogus`）、56 个请求头名、
   108 个响应头名、125 个 query 参数名、状态码分布、关键判读。
-- `tools/reqable_index.json` —— 332 条逐流索引（`sid/method/host/path/status`）。
+- 仓库根 `tools/reqable_index.json` —— 332 条逐流索引（`sid/method/host/path/status`）。
 
 两份都只含名字/计数/结构，**不含任何头值、cookie、token、query 值**。
-分析正文见 [07](doubao2api-07-reqable-fullcapture.md)。
 
 ### 8.4 三协议 × 两形态实测矩阵（2026-10-17，共 6 次上游调用）
 
