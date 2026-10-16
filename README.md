@@ -15,6 +15,7 @@
 - **无需签名**：不实现任何字节签名算法；cookie 只需 10 个名字
 - **多轮会话**：会话历史由豆包服务端持有，客户端回传 `conversation_id` 即可续接
 - **入站鉴权**：`Authorization: Bearer` / `x-api-key`（未设 key 则本地裸奔模式）
+- **工具上下文可透传**：Anthropic `tool_use` / `tool_result` ⇄ Chat `tool_calls` / `role=tool` 双向翻译完备（但上游不会主动发起调用，见「工具调用：两条不同的面」）
 - **轻量**：纯 stdlib + Flask，无浏览器自动化、无 Playwright、无 Redis
 - **离线可测**：86 项断言不打真实请求即可验证解析器与协议桥
 
@@ -205,9 +206,31 @@ python Doubao2api/tests/test_bridges.py       # 26 项：三协议桥（含上�
 
 > 逆向**证据**（工具链、字符串转储、native-network 产物、抓包样本）保留在本地 `workspace/` 与 `tools/samples/`，**不入库**（体积与环境相关）；文档中指向它们的路径是本地路径，克隆后不存在。
 
+## 工具调用：两条不同的面
+
+**本代理面**（Web `/chat/completion`）没有 OpenAI 式 function calling：请求信封固定五键
+`client_meta` / `messages` / `option` / `user_context` / `ext`，**没有 `tools` 声明位**；响应 SSE 也没有
+`tool_calls` 帧。桥层能做的是**工具上下文的翻译与透传**——Anthropic 的 `tool_use` / `tool_result`
+会翻成 `tool_calls` / `role=tool` 随请求带上——但模型不会据此主动发起调用。
+
+**豆包自己的工具能力在另一条面上**（不在本代理范围）：技能云 / 技能商店 / 连接器 / CUA 任务模式。
+端点清单里能直接看到这条面：
+
+| 端点 | 含义 |
+|---|---|
+| `/samantha/tool/upload_tool_call_result` | 客户端把工具调用结果回传上游 |
+| `/alice/office/tool_local/upload_tool_call_result(_v2)` | 同上（办公场景） |
+| `/alice/office/skills/manage/*` | 技能安装 / 详情 / 启停 / 商店 / 插件 / 连接器 OAuth |
+| `/alice/bot/skill_cards` | 技能卡片 |
+
+机制细节见 [docs/04 技能云下发体系](docs/DOUBAO-04-技能云下发体系.md)、
+[docs/09 沙箱虚拟化与 CUA](docs/DOUBAO-09-执行环境组件-沙箱虚拟化与CUA.md) 与
+[DOUBAO-TASK-MODE-AUDIT](docs/DOUBAO-TASK-MODE-AUDIT.md)：模型只在沙箱里生成动作，经 GAC 协议
+（ChaCha20-Poly1305 帧 + 三凭证会话）送回宿主执行，**模型代码碰不到 Win32**。
+
 ## 已知限制
 
-- **工具调用不闭环**：上游豆包无 function calling；桥层的 tool_use / tool_calls 翻译是完备的，但模型不会主动发起（antml 文本回收器已就绪未接线）
+- **本通道无 function calling**：请求信封没有 `tools` 声明位、响应无 `tool_calls` 帧，模型不会按你给的 schema 主动调用（豆包的工具能力在技能面，见上）
 - **图片丢弃**：请求里的图片块在数据面被丢弃，不透传
 - **无 reasoning**：上游 SSE 无思考通道，Responses 的 reasoning item 不会出现
 - **usage 为估算**：豆包不回 token 数，usage 按字符数近似
