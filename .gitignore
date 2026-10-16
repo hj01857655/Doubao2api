@@ -1,0 +1,38 @@
+# 大件产物：本地保留，不入库。
+#   workspace/      逆向工作目录：base-runtime 解包运行时 162MB + modules DLL strings 12MB
+#                   + 含密钥的 ttnet server config，共 176MB。
+#                   → docs/ 里指向 workspace/ 的路径是**本地路径**，克隆后不存在。
+#   .venv/          虚拟环境 75MB（Doubao2api/.venv 一并命中，见「通用垃圾」段）。
+workspace/
+
+# 通用垃圾
+__pycache__/
+*.pyc
+.venv/
+*.log
+mitmdump.out
+*.out
+.DS_Store
+Thumbs.db
+
+# 凭证卫生兜底
+.env
+*.env
+!*.env.example
+credentials.json
+auth.json
+session_cache.json
+free_cache.json
+*.key
+*.pem
+*.der
+
+# 抓包产物（含 cookie/token/签名）
+*.reqable
+*.har
+*.pcap
+*.bin
+manifest.jsonl
+tools/samples/
+tools/bundle/
+tools/reqable_index.json

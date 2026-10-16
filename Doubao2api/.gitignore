@@ -1,0 +1,14 @@
+# 抓包样本含真实凭证/cookie，绝不入库（tools/samples/ 另有自忽略兜底）
+tools/samples/
+tools/bundle/
+*.bin
+manifest.jsonl
+capture.log
+__pycache__/
+.env
+credentials.json
+server.log
+server.*.log
+tests/conversations.json
+tools/*.out
+tools/reqable_index.json

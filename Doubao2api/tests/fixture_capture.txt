@@ -1,0 +1,72 @@
+id: 0
+event: SSE_HEARTBEAT
+data: {}
+
+id: 0
+event: SSE_ACK
+data: {"query_list":[{"question_id":"58756254450320130","local_message_id":"bef6d8f0-c96e-11f1-8ec4-9b95797a1ee2","message_index":1}],"ack_client_meta":{"conversation_id":"38447554619021570","local_conversation_id":"local_2072112497206180","conversation_type":3,"section_id":"38447554619021826","conversation_info":{"conversation_id":"38447554619021570","name":"新对话","bot_type":3}},"timeout_conf":{"answer_first_pending_time":180000,"packet_interval_time":120000,"max_retry_count":10,"max_retry_duration_ms":21600000,"retry_interval_ms":1000}}
+
+id: 1
+event: FULL_MSG_NOTIFY
+data: {"message":{"conversation_id":"38447554619021570","message_id":"58756254450320130","user_type":1,"content_type":9999,"index_in_conv":1,"ext":{"model_type":"38","bot_id":"7338286299411103781"},"local_message_id":"bef6d8f0-c96e-11f1-8ec4-9b95797a1ee2","bot_reply_message_id":"0"}}
+
+id: 4
+event: STREAM_MSG_NOTIFY
+data: {"content":{"content_block":[{"block_type":10000,"block_id":"10482015590636290","content":{"text_block":{"text":"你"}},"is_finish":false,"patch_type":1}],"content_status":100,"ext":{"llm_intention":"seed_main","model_type":"38","agent_name":"豆包"},"content_type":9999,"tts_content":"你"},"meta":{"message_id":"58756254450326274","conversation_id":"38447554619021570","section_id":"38447554619021826","sender_id":"7338286299411103781","user_type":2,"index_in_conv":2,"bot_reply_message_id":"58756254450320130"},"attr":{"reply_unique_key":"759a0fcd-ffc4-4c85-8ad5-01126e77e0d7"}}
+
+id: 6
+event: STREAM_CHUNK
+data: {"message_id":"58756254450326274","patch_op":[{"patch_object":1,"patch_type":1,"patch_value":{"content_block":[{"block_type":10000,"block_id":"10482015590636290","content":{"text_block":{"text":"好"}},"is_finish":false,"patch_type":1}]}}]}
+
+id: 7
+event: STREAM_CHUNK
+data: {"message_id":"58756254450326274","patch_op":[{"patch_object":111,"patch_type":1,"patch_value":{"tts_content":"好"}}]}
+
+id: 9
+event: CHUNK_DELTA
+data: {"text":"呀！有什么我可以"}
+
+id: 10
+event: STREAM_CHUNK
+data: {"message_id":"58756254450326274","patch_op":[{"patch_object":111,"patch_type":1,"patch_value":{"tts_content":"呀！有什么我可以"}}]}
+
+id: 12
+event: CHUNK_DELTA
+data: {"text":"帮你的吗？"}
+
+id: 13
+event: STREAM_CHUNK
+data: {"message_id":"58756254450326274","patch_op":[{"patch_object":111,"patch_type":1,"patch_value":{"tts_content":"帮你的吗？"}}]}
+
+id: 16
+event: STREAM_CHUNK
+data: {"message_id":"58756254450326274","patch_op":[{"patch_object":1,"patch_type":1,"patch_value":{"content_block":[{"block_type":10000,"block_id":"10482015590636290","content":{"text_block":{}},"is_finish":true,"patch_type":1}]}}]}
+
+id: 17
+event: STREAM_CHUNK
+data: {"message_id":"58756254450326274","patch_op":[{"patch_object":3,"patch_type":2,"patch_value":{}},{"patch_object":50,"patch_type":1,"patch_value":{"ext":{"is_finish":"1"}}}]}
+
+id: 18
+event: SSE_REPLY_END
+data: {"end_type":1,"msg_finish_attr":{"msgid":"58756254450326274","brief":"你好呀！有什么我可以帮你的吗？"}}
+
+id: 19
+event: SSE_REPLY_END
+data: {"end_type":2,"answer_finish_attr":{"has_suggest":true}}
+
+id: 20
+event: STREAM_CHUNK
+data: {"message_id":"58756254450326274","patch_op":[{"patch_object":50,"patch_type":1,"patch_value":{"ext":{"has_suggest":"1","sp_v2":"[{\"suggest_type\":1,\"content\":\" 你能做些什么？\"}]"}}}]}
+
+id: 21
+event: STREAM_CHUNK
+data: {"message_id":"58756254450326274","patch_op":[{"patch_object":50,"patch_type":1,"patch_value":{"ext":{"has_suggest":"1","sp_v2":"[{\"suggest_type\":1,\"content\":\" 你能做些什么？\"},{\"suggest_type\":1,\"content\":\" 你是谁？\"}]"}}}]}
+
+id: 22
+event: STREAM_CHUNK
+data: {"message_id":"58756254450326274","patch_op":[{"patch_object":50,"patch_type":1,"patch_value":{"ext":{"has_suggest":"1","sp_v2":"[{\"suggest_type\":1,\"content\":\" 你能做些什么？\"},{\"suggest_type\":1,\"content\":\" 你是谁？\"},{\"suggest_type\":1,\"content\":\" 你是怎么学习的？\"}]"}}}]}
+
+id: 23
+event: SSE_REPLY_END
+data: {"end_type":3}
+
