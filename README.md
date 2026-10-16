@@ -215,7 +215,7 @@ python Doubao2api/tests/test_bridges.py       # 26 项：三协议桥（含上�
 
 从 [DOUBAO-00 索引](docs/DOUBAO-00-索引.md) 进入，覆盖：应用架构与安装布局、沙箱运行时与 Python 执行栈、**GAC 传输协议全解**、技能云下发体系、UI 层与扩展面、**ttnet 私有模块地图 / 加密握手与运行配置 / btrans body 帧格式**、执行环境组件（沙箱 / 虚拟化 / CUA）、宿主侧模块定档、aha_doctor 环境检测、浏览器扩展面、sscronet 导出面、剩余原生域、ttnet 加密帧层深挖、未深挖与后续。
 
-> 逆向**证据**（工具链、字符串转储、native-network 产物、抓包样本）保留在本地 `workspace/` 与 `tools/samples/`，**不入库**（体积与环境相关）；文档中指向它们的路径是本地路径，克隆后不存在。
+> 逆向**证据**（工具链、字符串转储、native-network 产物、抓包样本）保留在本地 `workspace/` 与 `tools/samples/`，**不入库**（体积与环境相关）；文档中指向它们的路径是本地路径，克隆后不存在。`tools/` 下入库的是脚本与清单：`reqable_mdb.py`（只读解析 Reqable 抓包库）、`reqable_inventory.md`（332 会话去重清单）、`chunkurl.py` / `mitm_addon.py` / `run_desktop.ps1`。
 
 ## 工具调用：两条不同的面
 
