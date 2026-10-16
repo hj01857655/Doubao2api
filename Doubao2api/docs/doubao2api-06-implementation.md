@@ -210,6 +210,9 @@ tests/test_bridges.py      PASS 26   FAIL 0    两个协议桥 + 流式错误路
 
 服务已在重启后加载当前代码：`/health` 200、`/v1/models` 200（6 档）。
 
+> 2026-10-17 修正：`/v1/models` 在 `server.py` → `app/routes/` 目录重构时丢失（实测 404），
+> 已补为 `app/routes/openai_models.py`（提交 `0704838`）；上面这行断言在补回后才成立。
+
 ### 8.1 真实上游补验（1 次请求）
 
 `/v1/messages` 走真上游通过：`role=assistant`、`stop_reason=end_turn`、
@@ -217,8 +220,9 @@ tests/test_bridges.py      PASS 26   FAIL 0    两个协议桥 + 流式错误路
 `usage.input_tokens=5/output_tokens=1`、`doubao{conversation_id,question_id,answer_message_id}`
 与响应头 `X-Doubao-Conversation-Id` 一致。
 
-**仍未经真实上游验证的**：`/v1/responses`（仅离线 26 项覆盖）、非默认模型档、
-以及全部错误分支（**故意不打**——再触发一次 `710022004` 只会加重账号风控状态）。
+**仍未经真实上游验证的**：非默认模型档，以及全部错误分支
+（**故意不打**——再触发一次 `710022004` 只会加重账号风控状态）。
+`/v1/responses` 与 chat / responses 两种流式形态已于 2026-10-17 补验，见 §8.4。
 
 ### 8.2 用 Reqable 原始字节复核解析器（零新增请求）
 
@@ -247,3 +251,28 @@ tests/test_bridges.py      PASS 26   FAIL 0    两个协议桥 + 流式错误路
 
 两份都只含名字/计数/结构，**不含任何头值、cookie、token、query 值**。
 分析正文见 [07](doubao2api-07-reqable-fullcapture.md)。
+
+### 8.4 三协议 × 两形态实测矩阵（2026-10-17，共 6 次上游调用）
+
+入站鉴权已启用（`.env` 的 `API_KEY`），下列调用均带 `Authorization: Bearer <key>`；
+每次上游调用之间按 05 的纪律隔 60 秒。
+
+| 协议 | 形态 | 实测结果 |
+|---|---|---|
+| `/v1/chat/completions` | 非流式（**带 `tools` 声明**） | 200；`message` 键只有 `content, role`，**无 `tool_calls`**——上游不认 `tools` 声明 |
+| `/v1/chat/completions` | 流式 | 200；6 个 `data:` 帧，首帧 `delta.role=assistant`，正文拼接 `你好`，末帧 `[DONE]` |
+| `/v1/messages` | 非流式 | 200；`type=message`、`stop_reason=end_turn`、`content[0].type=text` |
+| `/v1/messages` | 流式 | 200；事件序列 `message_start → content_block_start → content_block_delta ×2 → content_block_stop → message_delta → message_stop` |
+| `/v1/responses` | 非流式 | 200；`object=response`、`output[0].content[0].type=output_text`、usage 含 `reasoning_tokens` 明细 |
+| `/v1/responses` | 流式 | 200；`response.created`（`sequence_number=0`）→ `response.completed`（`sequence_number=7`），终帧携带聚合全文与 usage |
+
+入站鉴权矩阵（用 `/v1/models` 探，不耗上游）：
+
+| 请求 | 结果 |
+|---|---|
+| 不带 key / 错 key | `401`，体为 `{"error":{"code":"invalid_api_key","type":"auth_error"}}` |
+| `Authorization: Bearer <key>` / `x-api-key: <key>` | `200` |
+| `/health` | `200`（不进 `guard()`，留作探活） |
+
+> 目录说明：本节与 §8.3 引用的 `tools/…` 均指**仓库根**下的 `tools/`，不在 `Doubao2api/` 内；
+> 该目录与 `workspace/` 同属不入库的本地取证面（见根 `README.md` 的 .gitignore 说明）。
