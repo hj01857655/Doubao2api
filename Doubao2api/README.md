@@ -14,6 +14,7 @@
 - **多轮会话**：会话历史由豆包服务端持有，客户端回传 `conversation_id` 即可续接
 - **入站鉴权**：`Authorization: Bearer` / `x-api-key`（未设 key 则本地裸奔模式）
 - **轻量**：纯 stdlib + Flask，无浏览器自动化、无 Playwright、无 Redis
+- **扫码登录**：内置 `/login` 扫码页，豆包 App 确认后 cookie 自动写回 `.env` 并热重建客户端（登录面 `aid=497858`，与对话面 `aid=582478` 分开）
 - **离线可测**：86 项断言不打真实请求即可验证解析器与协议桥
 
 ## 工作原理
@@ -50,6 +51,8 @@ sessionid  sessionid_ss  sid_tt  sid_guard  uid_tt  uid_tt_ss
 d_ticket  ttwid  s_v_web_id  passport_csrf_token
 ```
 
+> 不想手工复制 cookie：启动服务后打开 <http://127.0.0.1:8378/login>，用豆包 App 扫码确认即可——cookie 由服务端写回 `.env`、上游客户端当场热重建，无需重启（设了 `API_KEY` 时用 `/login?key=<key>`）。
+
 ### 3. 启动
 
 ```bash
@@ -70,6 +73,9 @@ curl http://127.0.0.1:8378/health
 |---|---|---|
 | GET | `/health` | 探活 |
 | GET | `/v1/models` | 模型列表 |
+| GET | `/login` | 扫码登录页（自包含 HTML） |
+| POST | `/login/qr` | 出码，返回 base64 PNG 与轮询地址 |
+| GET | `/login/qr/<token>` | 轮询扫码状态；确认后写回 cookie |
 | POST | `/v1/chat/completions` | OpenAI Chat Completions |
 | POST | `/v1/messages` | Anthropic Messages |
 | POST | `/v1/responses` | OpenAI Responses |

@@ -28,6 +28,23 @@ except doubao.DoubaoError as exc:
     CLIENT = None
     log.error("启动即失败：%s", exc)
 
+
+def reload_client() -> bool:
+    """按当前环境变量（cookie）重建上游客户端，返回是否可用。
+
+    扫码登录写回 .env 后走这里热替换，省掉重启；客户端不持有跨请求连接，
+    重建期间的旧实例由 GC 收走。
+    """
+    global CLIENT
+    try:
+        CLIENT = doubao.DoubaoClient()
+        log.info("上游客户端已按新 cookie 重建")
+        return True
+    except doubao.DoubaoError as exc:
+        CLIENT = None
+        log.error("重建上游客户端失败：%s", exc)
+        return False
+
 # conversation_id 缓存：key = OpenAI `user` / Anthropic metadata.user_id / X-Doubao-Session
 _CONV_LOCK = threading.Lock()
 _CONV_BY_USER: dict[str, str] = {}

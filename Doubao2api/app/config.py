@@ -34,3 +34,29 @@ def setup_logging() -> None:
 def api_key() -> str:
     """入站鉴权密钥；空串 = 本地裸奔模式。"""
     return os.environ.get("API_KEY") or os.environ.get("DOUBAO_API_KEY") or ""
+
+
+def save_cookie(cookie: str, path: str = None) -> str:
+    """把 DOUBAO_COOKIE 写回 .env 并更新当前进程环境变量，返回写入路径。
+
+    只改这一行、其余原样保留；.env 不在版本控制内（见 .gitignore），凭据不落日志。
+    """
+    path = path or os.path.join(BASE, ".env")
+    line = 'DOUBAO_COOKIE="%s"' % cookie
+    lines = []
+    if os.path.exists(path):
+        with open(path, encoding="utf-8") as f:
+            lines = f.read().splitlines()
+    for i, old in enumerate(lines):
+        if old.strip().startswith("DOUBAO_COOKIE"):
+            lines[i] = line
+            break
+    else:
+        if lines and lines[-1].strip():
+            lines.append("")
+        lines.append("# ---- 上游凭证（/login 扫码写回，也可手工粘贴） ----")
+        lines.append(line)
+    with open(path, "w", encoding="utf-8") as f:
+        f.write("\n".join(lines) + "\n")
+    os.environ["DOUBAO_COOKIE"] = cookie
+    return path

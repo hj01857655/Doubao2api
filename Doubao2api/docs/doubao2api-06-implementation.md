@@ -281,3 +281,35 @@ tests/test_bridges.py      PASS 26   FAIL 0    两个协议桥 + 流式错误路
 
 > 目录说明：本节与 §8.3 引用的 `tools/…` 均指**仓库根**下的 `tools/`，不在 `Doubao2api/` 内；
 > 该目录与 `workspace/` 同属不入库的本地取证面（见根 `README.md` 的 .gitignore 说明）。
+
+## 9. 扫码登录（2026-10-17 实测，`app/qrlogin.py` + `/login`）
+
+### 9.1 端点（三段全是 GET，域名 `www.doubao.com`）
+
+| 步骤 | 请求 | 关键返回 |
+|---|---|---|
+| CSRF | `GET /passport/safe/csrf_token/?aid=497858` | `{"data":{"passport_csrf_token":"<32hex>"},"message":"success"}` |
+| 出码 | `GET /passport/web/get_qrcode/?next=<urlencoded>&aid=497858`，头 `x-tt-passport-csrf-token` | `error_code=0`、`token`（35 字符）、`qrcode`（裸 base64 PNG，约 3.5 KB）、`qrcode_index_url`、`expire_time` |
+| 轮询 | `GET /passport/web/check_qrconnect/?next=&token=&aid=497858`，同一 CSRF 头 | `status`: `new → scanned → confirmed`（附 `redirect_url`）/ `expired` |
+| 收票 | 跟随 `redirect_url` 逐跳收 `Set-Cookie` | `sessionid` 等 10 个鉴权名（即 §1.2 最小集） |
+
+### 9.2 三个坑（都实测踩过）
+
+1. **登录面 aid = 497858 ≠ 对话面 aid = 582478**。用 582478 打 `/passport/web/get_qrcode/` 得到 `error_code 22「非法应用」`——看着像端点不存在，实际是应用 id 不对，所以**不能拿错误码判断端点存在性**（换 aid 后同一路径立刻 `error_code=0`）。
+2. 端点必须 **GET + 尾斜杠 + 带 `next`**（回跳地址）；缺尾斜杠会被 301/307 掉。
+3. CSRF 只认 **头** `x-tt-passport-csrf-token`，放 query 不生效。
+
+前端侧佐证：chat 异步 chunk `component-login-modal`（id `sz`，第 3 方 PR 同源 GET 可复现）里是
+`(0,ek.getFlowAccount)().passportApi.getQrcode(...)` 与 `.checkQrconnect(...)`，与上表方法名一一对应
+（`ek` = 模块 `FOT`，其实现 chunk 未入库；扫码 UI 走的是这条链，`/passport/web/web_login_success` 只是收尾标记）。
+
+### 9.3 落地与验证
+
+`app/qrlogin.py`（stdlib，`_http_get` 是唯一网络边界）→ `app/routes/login_qr.py`
+（`POST /login/qr`、`GET /login/qr/<token>`、`GET /login` 自包含扫码页）；确认后
+`config.save_cookie()` 改写 `.env` 的 `DOUBAO_COOKIE` 并 `gateway.reload_client()` 热重建，**无需重启**。
+
+验证：真实出码冒烟 2 次（token 35 字符、PNG base64 3538 字符、`check_qrconnect` = `new`/`error_code=0`）；
+HTTP 层 `POST /login/qr` → 200 且字段齐、未知 token → 404、无/错凭据 → 401、`GET /login` → 200；
+离线 `tests/test_qrlogin.py` 8 项（假传输替换 `_http_get`，覆盖跳转链收票、CSRF 头只加在出码/轮询、过期判定）。
+待人工确认的一步：真机扫码 → `confirmed` → 回跳收票（需要手机端配合，未自动化）。
