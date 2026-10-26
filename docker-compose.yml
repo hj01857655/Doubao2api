@@ -1,0 +1,20 @@
+services:
+  doubao2api:
+    build: .
+    container_name: doubao2api
+    restart: unless-stopped
+    ports:
+      - "8378:8378"
+    environment:
+      - DOUBAO_COOKIE=${DOUBAO_COOKIE}
+      - HOST=${HOST:-0.0.0.0}
+      - PORT=${PORT:-8378}
+      - DOUBAO_STATE_DIR=${DOUBAO_STATE_DIR:-/app/data}
+    volumes:
+      - ./data:/app/data
+    networks:
+      - doubao2api_net
+
+networks:
+  doubao2api_net:
+    driver: bridge

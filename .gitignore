@@ -1,0 +1,13 @@
+# Go 构建产物
+*.exe
+*.exe~
+# 运行时产物
+*.log
+logs/
+dumps/
+# 凭据（OAuth/token，不入库）
+token.json
+credentials.json
+.cred/
+.env
+.env.*
