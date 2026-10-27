@@ -31,7 +31,7 @@ func NewServer(g *gateway.Gateway, log *slog.Logger) *Server {
 }
 
 // Handler 组装路由。Python 无全局 before_request：guard 由各路由自带；
-// /health 与 /login 页面不鉴权。
+// /health、/login 与 /admin 页面不鉴权（overview API 仍走 APIKeyOK）。
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/health", s.health)
@@ -42,6 +42,8 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("/v1/messages", s.anthropic)
 	mux.HandleFunc("/v1/responses", s.responses)
 	mux.HandleFunc("/v1/models", s.models)
+	mux.HandleFunc("/admin", s.servePanel)
+	mux.HandleFunc("/admin/api/overview", s.adminOverview)
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusNotFound, map[string]any{
 			"error": map[string]any{

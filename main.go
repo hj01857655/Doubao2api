@@ -46,7 +46,9 @@ func main() {
 	srv := handler.NewServer(g, log)
 
 	port := orDefault(os.Getenv("PORT"), "8378")
-	addr := "127.0.0.1:" + port
+	// HOST 必须生效：.env.example / docker-compose 传 0.0.0.0，写死回环
+	// 会让容器端口映射完全失效
+	addr := orDefault(os.Getenv("HOST"), "127.0.0.1") + ":" + port
 
 	var names []string
 	for name := range doubao.MODES {

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Doubao2api</title>
+<style>
+:root{--bg:#0f1115;--card:#181b22;--line:#262b36;--tx:#e6e9ef;--dim:#8b93a3;--ok:#4ade80;--bad:#f87171;--acc:#6ea8fe}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.6 "Segoe UI",system-ui,sans-serif}
+.wrap{max-width:860px;margin:0 auto;padding:20px 16px 60px}
+h1{font-size:18px;margin:0 0 4px}
+.sub{color:var(--dim);font-size:13px;margin:0 0 16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:14px}
+.card h3{margin:0 0 10px;font-size:14px}
+.kv{display:grid;grid-template-columns:110px 1fr;gap:8px 12px;font-size:13px;align-items:center}
+.kv b{color:var(--dim);font-weight:400}
+button,a.button{background:var(--acc);border:none;border-radius:6px;color:#0b1220;padding:7px 14px;cursor:pointer;font-size:13px;font-weight:600;text-decoration:none;display:inline-block}
+a.button.big{font-size:14px;padding:10px 22px}
+button.ghost{background:none;border:1px solid var(--line);color:var(--tx);font-weight:400}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
+th{color:var(--dim);font-weight:400}
+.ok{color:var(--ok)}.bad{color:var(--bad)}.dim{color:var(--dim)}
+.badge{display:inline-block;border-radius:99px;padding:1px 9px;font-size:11px;font-weight:600}
+.badge.on{background:#14321f;color:var(--ok)}.badge.off{background:#321414;color:var(--bad)}
+.mono{font-family:Consolas,monospace;font-size:12px}
+input{background:#0d0f13;border:1px solid var(--line);border-radius:6px;color:var(--tx);padding:7px 10px;font-size:13px;width:180px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>Doubao2api 控制台</h1>
+<p class="sub">豆包 → OpenAI / Anthropic 兼容网关</p>
+<div id="vMain"></div>
+</div>
+<script>
+"use strict";
+function authHeaders(){const k=localStorage.db_apikey;if(!k)return{};return{"Authorization":"Bearer "+k}}
+const esc=s=>{const d=document.createElement("div");d.textContent=s==null?"":String(s);return d.innerHTML};
+async function load(){
+  let o;
+  try{const r=await fetch("/admin/api/overview",{headers:authHeaders()});o=await r.json()}
+  catch(e){o={}}
+  const box=document.getElementById("vMain");
+  if(!o.credential){box.innerHTML='<div class="card bad">overview 加载失败'+(o.error?'（鉴权被拒：填入 API Key 后保存再试）':"")+'</div>';return}
+  const key=localStorage.db_apikey||"";
+  // 面板页本身不鉴权；/login 扫码页需要 key 时用 query 传递（与该页约定一致）
+  const loginHref="/login"+(o.local_auth&&key?"?key="+encodeURIComponent(key):"");
+  box.innerHTML=`
+  <div class="card"><h3>登录状态</h3><div class="kv">
+    <b>上游凭据</b><span class="${o.credential.valid?"ok":"bad"}"><span class="badge ${o.credential.valid?"on":"off"}">${o.credential.valid?"cookie 已就绪":"未登录（对话请求将 503）"}</span></span>
+    <b>扫码登录</b><span><a class="button big" href="${esc(loginHref)}">打开扫码登录页 →</a></span>
+    <b>本地鉴权</b><span>${o.local_auth?`<span class="badge on">API_KEY 已开启</span> <input id="k" placeholder="API Key" value="${esc(key)}"> <button class="ghost" onclick="localStorage.db_apikey=document.getElementById('k').value;load()">保存</button>`:'<span class="badge off">未开启（本地裸奔模式）</span>'}</span>
+  </div></div>
+  <div class="card"><h3>模型（${(o.models||[]).length}）</h3>
+    <table><tr><th>模型 ID</th><th>档位</th></tr>
+    ${(o.models||[]).map(m=>`<tr><td class="mono">${esc(m.id)}</td><td>${esc(m.display)}</td></tr>`).join("")}</table></div>
+  <div class="card"><h3>上游</h3><span class="mono">${esc(o.upstream||"—")}</span></div>`;
+}
+load();
+</script>
+</body>
+</html>
