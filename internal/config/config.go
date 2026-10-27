@@ -2,10 +2,11 @@
 package config
 
 import (
-	"fmt"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 // LoadEnv 极简 .env：KEY=VALUE，# 注释，不覆盖已存在的环境变量
@@ -61,37 +62,25 @@ func or(a, b string) string {
 	return b
 }
 
-// SaveCookie 把 DOUBAO_COOKIE 写回 .env 并更新当前进程环境变量，返回写入路径
-// （对齐 config.save_cookie：只改这一行，其余原样保留；凭据不落日志）。
+// SaveCookie 把 DOUBAO_COOKIE 落盘到独立凭据文件 cookie.json（0600，原子替换），
+// 不写 .env——凭据与配置分离。返回写入路径；调用方负责 os.Setenv 热更新。
 func SaveCookie(cookie, path string) (string, error) {
 	if path == "" {
 		dir := os.Getenv("DOUBAO_STATE_DIR")
 		if dir == "" {
 			dir = exeDir()
 		}
-		path = filepath.Join(dir, ".env")
+		path = filepath.Join(dir, "cookie.json")
 	}
-	line := fmt.Sprintf("DOUBAO_COOKIE=%q", cookie)
-	lines := []string{}
-	if raw, err := os.ReadFile(path); err == nil {
-		lines = strings.Split(strings.TrimRight(string(raw), "\n"), "\n")
+	b, err := json.MarshalIndent(map[string]string{"cookie": cookie, "saved_at": time.Now().Format(time.RFC3339)}, "", "  ")
+	if err != nil {
+		return "", err
 	}
-	replaced := false
-	for i, old := range lines {
-		if strings.HasPrefix(strings.TrimSpace(old), "DOUBAO_COOKIE") {
-			lines[i] = line
-			replaced = true
-			break
-		}
+	tmp := path + ".tmp"
+	if err := os.WriteFile(tmp, b, 0o600); err != nil {
+		return "", err
 	}
-	if !replaced {
-		if len(lines) > 0 && strings.TrimSpace(lines[len(lines)-1]) != "" {
-			lines = append(lines, "")
-		}
-		lines = append(lines, "# ---- 上游凭证（/login 扫码写回，也可手工粘贴） ----")
-		lines = append(lines, line)
-	}
-	if err := os.WriteFile(path, []byte(strings.Join(lines, "\n")+"\n"), 0o600); err != nil {
+	if err := os.Rename(tmp, path); err != nil {
 		return "", err
 	}
 	os.Setenv("DOUBAO_COOKIE", cookie)
